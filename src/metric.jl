@@ -191,15 +191,17 @@ type MSE <: AbstractEvalMetric
   MSE() = new(0.0, 0)
 end
 
-function _update_single_output(metric :: MSE, label :: NDArray, pred :: NDArray)
-  label = copy(label)
-  pred  = copy(pred)
+function _update_single_output(metric :: MSE, labels :: NDArray, preds :: NDArray)
+  @nd_as_jl ro=(labels, preds) begin
+    for sample in 1:size(preds, ndims(preds))
+      label = view(labels, ntuple(d->:,ndims(labels)-1)..., sample)
+      pred  = view(preds, ntuple(d->:,ndims(preds)-1)..., sample)
 
-  n_sample = size(pred)[end]
-  metric.n_sample += n_sample
-
-  for i = 1:n_sample
-    metric.mse_sum += (label[i] - pred[i])^2
+      for (l, p) in zip(label, pred)
+        metric.n_sample += 1
+        metric.mse_sum += (l - p)^2
+      end
+    end
   end
 end
 
