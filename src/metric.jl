@@ -86,6 +86,39 @@ function get(metric :: MultiMetric)
 end
 
 """
+    SeqMetric(metrics::Vector{AbstractEvalMetric})
+
+Split outputs over metrics and get a result for all of them.
+
+# Usage
+To calculate both mean-squared error [`Accuracy`](@ref) and log-loss [`ACE`](@ref):
+```julia
+  mx.fit(..., eval_metric = mx.SeqMetric([mx.Accuracy(), mx.ACE()]))
+```
+"""
+type SeqMetric <: mx.AbstractEvalMetric
+    metrics :: Vector{mx.AbstractEvalMetric}
+end
+
+function update!(metric :: SeqMetric, labels :: Vector{NDArray}, preds :: Vector{NDArray})
+    @assert length(metric.metrics) == length(labels)
+    @assert length(metric.metrics) == length(preds)
+    for (m, l, p) in zip(metric.metrics, labels, preds)
+        update!(m, [l], [p])
+    end
+    return nothing
+end
+
+function reset!(metric :: SeqMetric)
+    map(reset!, metric.metrics)
+    return nothing
+end
+
+function get(metric :: SeqMetric)
+    mapreduce(get, append!, metric.metrics)
+end
+
+"""
     Accuracy
 
 Multiclass classification accuracy.
