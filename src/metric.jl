@@ -55,6 +55,26 @@ function get(metric :: AbstractEvalMetric)
 end
 
 """
+    NullMetric()
+
+A Metric that does nothing!
+"""
+type NullMetric <: mx.AbstractEvalMetric
+end
+
+function update!(metric :: NullMetric, labels :: Vector{NDArray}, preds :: Vector{NDArray})
+  return nothing
+end
+
+function reset!(metric :: NullMetric)
+  return nothing
+end
+
+function get(metric :: NullMetric)
+  return Tuple{Symbol, Float64}[]
+end
+
+"""
     MultiMetric(metrics::Vector{AbstractEvalMetric})
 
 Combine multiple metrics in one and get a result for all of them.
