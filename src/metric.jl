@@ -239,6 +239,33 @@ function reset!(metric :: MSE)
   metric.n_sample = 0
 end
 
+
+type NDMSE <: AbstractEvalMetric
+  mse_sum :: Vector{NDArray}
+  n_sample :: Int
+  NDMSE() = new(Vector{NDArray}(), 0)
+end
+
+function get(metric :: NDMSE)
+  # Delay copy until last possible moment
+  mse_sum = mapreduce(nda->copy(nda)[1], +, 0.0, metric.mse_sum)
+  return [(:NDMSE, mse_sum / metric.n_sample)]
+end
+
+function reset!(metric :: NDMSE)
+  metric.mse_sum = Vector{NDArray}()
+  metric.n_sample = 0
+end
+
+function update!(metric :: NDMSE, labels :: Vector{NDArray}, preds :: Vector{NDArray})
+  for (label, pred) in zip(labels, preds)
+    metric.n_sample += length(label)
+    mse_sum = mx.sum(mx._PowerScalar(label - pred,scalar=2))
+    push!(metric.mse_sum, mse_sum)
+  end
+  return nothing
+end
+
 doc"""
     NMSE
 
